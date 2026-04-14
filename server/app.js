@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 export const __root_dirname = dirname(__filename);
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 const agent = new https.Agent({
     rejectUnauthorized: false, // ignore invalid certs
