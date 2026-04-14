@@ -16,6 +16,7 @@ export const __root_dirname = dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
+const clientDir = path.join(__root_dirname, "..", "client");
 
 const agent = new https.Agent({
     rejectUnauthorized: false, // ignore invalid certs
@@ -37,6 +38,14 @@ app.use(
 );
 
 app.use(express.static(path.join(__root_dirname, "public")));
+
+app.get("/health", (_req, res) => {
+    res.status(200).json({ status: "ok" });
+});
+
+app.get("/", (_req, res) => {
+    res.sendFile(path.join(clientDir, "index.html"));
+});
 
 app.use("/*", async (req, res) => {
     const url = req.params[0];

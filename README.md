@@ -31,3 +31,8 @@ Use one of these options:
 2. Or switch the service to **Dockerfile deployment from Git repo URL** (without GitHub provider binding), then use this repo's root `Dockerfile`.
 
 This repo now includes a production Dockerfile and reads `PORT` from environment variables so Dokploy can map ports correctly.
+
+### Runtime notes
+- The server now serves `client/index.html` at `/` so the app opens directly after deployment.
+- Client assets use same-origin paths (no hardcoded `localhost`) so hosted deployments work without edits.
+- Healthcheck endpoint: `/health`.

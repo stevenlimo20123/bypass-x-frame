@@ -6,6 +6,7 @@ COPY server/package*.json ./
 RUN npm ci --omit=dev
 
 COPY server/ ./
+COPY client/ ../client/
 
 ENV NODE_ENV=production
 EXPOSE 3000
