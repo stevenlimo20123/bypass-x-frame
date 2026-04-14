@@ -27,8 +27,65 @@ function toProxyPath(url) {
   return `/proxy/${encodeURIComponent(url)}`;
 }
 
+function buildRuntimeProxyScript(baseUrl) {
+  const serializedBaseUrl = JSON.stringify(baseUrl);
+  return `
+<script>
+(() => {
+  const PROXY_PREFIX = "/proxy/";
+  const baseUrl = new URL(${serializedBaseUrl});
+
+  const shouldBypass = (value) =>
+    typeof value === "string" &&
+    (value.startsWith("data:") ||
+      value.startsWith("blob:") ||
+      value.startsWith("javascript:") ||
+      value.startsWith("mailto:") ||
+      value.startsWith("tel:"));
+
+  const toProxiedPath = (value) => {
+    if (value instanceof URL) value = value.toString();
+    if (typeof value !== "string") return value;
+    if (shouldBypass(value)) return value;
+
+    let absoluteUrl;
+    try {
+      absoluteUrl = new URL(value, baseUrl);
+    } catch {
+      return value;
+    }
+
+    if (
+      absoluteUrl.origin === window.location.origin &&
+      absoluteUrl.pathname.startsWith(PROXY_PREFIX)
+    ) {
+      return value;
+    }
+
+    return PROXY_PREFIX + encodeURIComponent(absoluteUrl.toString());
+  };
+
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    if (input instanceof Request) {
+      const proxiedUrl = toProxiedPath(input.url);
+      if (proxiedUrl === input.url) return originalFetch(input, init);
+      return originalFetch(new Request(proxiedUrl, input), init);
+    }
+    return originalFetch(toProxiedPath(input), init);
+  };
+
+  const originalOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function open(method, url, ...rest) {
+    return originalOpen.call(this, method, toProxiedPath(url), ...rest);
+  };
+})();
+</script>
+`.trim();
+}
+
 function rewriteHtml(html, baseUrl) {
-  return html.replace(
+  const rewrittenHtml = html.replace(
     /(href|src|action)=(["'])([^"']+)\2/gi,
     (_match, attr, quote, value) => {
       if (
@@ -51,6 +108,13 @@ function rewriteHtml(html, baseUrl) {
       return `${attr}=${quote}${toProxyPath(absolute)}${quote}`;
     }
   );
+
+  const runtimeScript = buildRuntimeProxyScript(baseUrl);
+  if (/<head[^>]*>/i.test(rewrittenHtml)) {
+    return rewrittenHtml.replace(/<head([^>]*)>/i, `<head$1>${runtimeScript}`);
+  }
+
+  return `${runtimeScript}${rewrittenHtml}`;
 }
 
 function buildRequestHeaders(incomingHeaders) {
