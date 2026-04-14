@@ -22,3 +22,12 @@ https://github.com/user-attachments/assets/c97752ef-c284-4976-ad9d-76609fe95980
 
 
 
+
+## Deploying on Dokploy
+If Dokploy shows `Error: ❌ Github Provider not found` during **Initializing deployment**, the Dokploy project is pointing to a missing GitHub OAuth provider (this is a Dokploy project configuration issue, not an app runtime error).
+
+Use one of these options:
+1. Reconnect a **GitHub Provider** in Dokploy and re-select it for the project.
+2. Or switch the service to **Dockerfile deployment from Git repo URL** (without GitHub provider binding), then use this repo's root `Dockerfile`.
+
+This repo now includes a production Dockerfile and reads `PORT` from environment variables so Dokploy can map ports correctly.
